@@ -90,4 +90,4 @@ if user_question:
                 })
 
             except Exception as e:
-                st.error(f"❌ Error: {e}")
+                st.error(f"Error: {e}")
