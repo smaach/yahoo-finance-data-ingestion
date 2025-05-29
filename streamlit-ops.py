@@ -7,13 +7,13 @@ from langchain.sql_database import SQLDatabase
 from langchain.agents.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_openai import ChatOpenAI
 
-# ---------- Streamlit Page Config ----------
+#Streamlit Page Config
 st.set_page_config(
     page_title="PostgreSQL Chat",
     layout="centered"
 )
 
-# ---------- Sidebar for Config ----------
+#Sidebar for Config
 with st.sidebar:
     st.title("Settings")
     openai_api_key = st.text_input("OpenAI API Key", type="password", help="Paste your OpenAI key here.")
@@ -24,7 +24,7 @@ if not openai_api_key:
     st.warning("Enter your OpenAI API key in the sidebar to get started.")
     st.stop()
 
-# ---------- Title & Instructions ----------
+#Title & Instructions
 st.markdown("<h1 style='text-align: center;'> Chat with Your Finance Database</h1>", unsafe_allow_html=True)
 st.markdown("""
 <div style="text-align: center; margin-bottom: 20px;">
@@ -36,11 +36,11 @@ Ask natural language questions like:
 </div>
 """, unsafe_allow_html=True)
 
-# ---------- Session State ----------
+#Session State
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ---------- Database Setup ----------
+# Database Setup
 DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/yahoo-finance"
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
@@ -48,7 +48,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 db = SQLDatabase(engine)
 
-# ---------- LangChain Setup ----------
+#LangChain Setup
 llm = ChatOpenAI(api_key=openai_api_key, model="gpt-3.5-turbo", temperature=0)
 toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 agent = create_sql_agent(
@@ -60,17 +60,17 @@ agent = create_sql_agent(
     handle_parsing_errors=True
 )
 
-# ---------- Display Chat History ----------
+#Display Chat History
 for chat in st.session_state.chat_history:
     with st.chat_message("user"):
         st.markdown(chat["question"])
     with st.chat_message("assistant"):
         st.markdown(chat["answer"])
 
-# ---------- Chat Input ----------
+#Chat Input
 user_question = st.chat_input("Ask something...")
 
-# ---------- Process New Input ----------
+#Process New Input
 if user_question:
     with st.chat_message("user"):
         st.markdown(user_question)
