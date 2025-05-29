@@ -7,26 +7,38 @@ from langchain.sql_database import SQLDatabase
 from langchain.agents.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_openai import ChatOpenAI
 
-# ---------- Streamlit Config ----------
-st.set_page_config(page_title="Chat with Local PostgreSQL")
-st.title("💬 Talk to Your PostgreSQL Finance Database")
+# ---------- Streamlit Page Config ----------
+st.set_page_config(
+    page_title="PostgreSQL Chat",
+    layout="centered"
+)
 
-st.markdown("""
-Ask questions like:
-- "What is the average closing price of AAPL?"
-- "Show TSLA's income statements for 2023."
-""")
-
-# ---------- Session State for Chat ----------
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-# ---------- OpenAI API Key Input ----------
-openai_api_key = st.text_input("🔑 OpenAI API Key", type="password")
+# ---------- Sidebar for Config ----------
+with st.sidebar:
+    st.title("Settings")
+    openai_api_key = st.text_input("OpenAI API Key", type="password", help="Paste your OpenAI key here.")
+    st.markdown("---")
+    st.markdown("Built with using LangChain + Streamlit")
 
 if not openai_api_key:
-    st.warning("Please enter your OpenAI API key.")
+    st.warning("Enter your OpenAI API key in the sidebar to get started.")
     st.stop()
+
+# ---------- Title & Instructions ----------
+st.markdown("<h1 style='text-align: center;'> Chat with Your Finance Database</h1>", unsafe_allow_html=True)
+st.markdown("""
+<div style="text-align: center; margin-bottom: 20px;">
+Ask natural language questions like:
+<ul style="list-style-position: inside; text-align: left; display: inline-block;">
+    <li>What is the average closing price of AAPL?</li>
+    <li>Show TSLA's income statements for 2023.</li>
+</ul>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------- Session State ----------
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
 # ---------- Database Setup ----------
 DATABASE_URL = "postgresql+psycopg2://postgres:postgres@localhost:5432/yahoo-finance"
@@ -44,7 +56,8 @@ agent = create_sql_agent(
     toolkit=toolkit,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
     verbose=True,
-    return_intermediate_steps=True
+    return_intermediate_steps=True,
+    handle_parsing_errors=True
 )
 
 # ---------- Display Chat History ----------
@@ -53,14 +66,9 @@ for chat in st.session_state.chat_history:
         st.markdown(chat["question"])
     with st.chat_message("assistant"):
         st.markdown(chat["answer"])
-        with st.expander("🔍 Show SQL Query"):
-            if chat["sql"]:
-                st.code(chat["sql"], language="sql")
-            else:
-                st.info("No SQL query was detected.")
 
 # ---------- Chat Input ----------
-user_question = st.chat_input("Ask your financial database something...")
+user_question = st.chat_input("Ask something...")
 
 # ---------- Process New Input ----------
 if user_question:
@@ -73,28 +81,12 @@ if user_question:
                 result = agent.invoke({"input": user_question})
                 answer = result["output"]
 
-                # Extract SQL query from intermediate steps
-                sql_query = ""
-                steps = result.get("intermediate_steps", [])
-                for step in steps:
-                    if isinstance(step, tuple):
-                        thought = str(step[0])
-                        if "SELECT" in thought.upper():
-                            sql_query = thought.strip()
-                            break
-
                 st.markdown(answer)
-                with st.expander("🔍 Show SQL Query"):
-                    if sql_query:
-                        st.code(sql_query, language="sql")
-                    else:
-                        st.info("No SQL query was generated.")
 
-                # Save interaction
+                # Save chat
                 st.session_state.chat_history.append({
                     "question": user_question,
-                    "answer": answer,
-                    "sql": sql_query
+                    "answer": answer
                 })
 
             except Exception as e:
